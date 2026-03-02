@@ -2,7 +2,17 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import streamlit as st
 
-st.write("Streamlit Demo")
+st.set_page_config(page_title="Analyse de la Pollution en Inde", layout="wide")
+st.title("📊 Taux de Pollution en Inde - Analyse AQI")
+st.markdown("---")
+st.markdown("""
+**Données source :** all_india_districts_aqi.csv
+
+Analyse complète du **taux de pollution atmosphérique** en Inde par état et district.
+Visualisation de l'**Air Quality Index (AQI)** et des principales sources de pollution.
+""")
+st.markdown("---")
+
 df = pd.read_csv('all_india_districts_aqi.csv')
 stateAQI = df.groupby("State")["Current AQI"].sum()
 stateAQI = stateAQI.sort_values(ascending=False)
