@@ -20,11 +20,27 @@ stateAQI = stateAQI.sort_values(ascending=False)
 # Sidebar pour sélectionner les états
 st.sidebar.header("Filtres")
 all_states = stateAQI.index.tolist()
+
+# boutons pour sélectionner/effacer tout rapidement
+col1, col2 = st.sidebar.columns(2)
+with col1:
+    if st.button("✔️ Tout sélectionner"):
+        selected_states = all_states
+with col2:
+    if st.button("❌ Effacer tout"):
+        selected_states = []
+
 selected_states = st.sidebar.multiselect(
     "Choisir les états à afficher",
     options=all_states,
-    default=all_states
+    default=all_states if 'selected_states' not in locals() else selected_states
 )
+
+# Slider interactif pour limiter le nombre d'états affichés
+max_states = st.sidebar.slider(
+    "Nombre maximum d'états à montrer", 1, len(all_states), len(all_states)
+)
+selected_states = selected_states[:max_states]
 
 # Checkboxes pour afficher/masquer les graphiques
 st.sidebar.header("Affichage des graphiques")
