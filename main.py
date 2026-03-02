@@ -42,6 +42,42 @@ axBar.set_axisbelow(True)
 st.pyplot(figBar)
 
 # --------------------------------------------------------------------------
+### POLLUTION OVER TIME (Most AQI vs Current AQI)
+# --------------------------------------------------------------------------
+filtered_time_df = df[df["State"].isin(selected_states)]
+time_data = filtered_time_df.groupby("State").agg({
+    "Most AQI Reached": "mean",
+    "Current AQI": "mean"
+}).loc[selected_states]
+
+figTime, axTime = plt.subplots(figsize=(12, 6))
+
+x_pos = range(len(time_data))
+width = 0.35
+
+bars1 = axTime.bar([i - width/2 for i in x_pos], time_data["Most AQI Reached"], width, label='Max AQI Atteint', color='#FF6B6B', alpha=0.8)
+bars2 = axTime.bar([i + width/2 for i in x_pos], time_data["Current AQI"], width, label='AQI Actuel', color='#4ECDC4', alpha=0.8)
+
+axTime.set_xlabel("État", color='white')
+axTime.set_ylabel("Valeur AQI", color='white')
+axTime.set_title("Évolution de la Pollution : AQI Max vs AQI Actuel", color='white')
+axTime.set_xticks(x_pos)
+axTime.set_xticklabels(time_data.index, rotation=45, ha='right')
+axTime.legend(loc='upper right', facecolor='#1a1a1a', edgecolor='white', labelcolor='white')
+
+figTime.patch.set_alpha(0)
+axTime.set_facecolor('none')
+axTime.tick_params(colors='white')
+axTime.spines['bottom'].set_color('white')
+axTime.spines['left'].set_color('white')
+axTime.spines['top'].set_color('none')
+axTime.spines['right'].set_color('none')
+axTime.grid(color='white', linestyle='--', linewidth=0.5, alpha=0.3, axis='y')
+axTime.set_axisbelow(True)
+
+st.pyplot(figTime)
+
+# --------------------------------------------------------------------------
 ### CAMEMBERT
 # --------------------------------------------------------------------------
 traduction = {
