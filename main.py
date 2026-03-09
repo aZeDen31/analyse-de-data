@@ -112,6 +112,22 @@ if show_time_chart:
     st.pyplot(figTime)
 
 # --------------------------------------------------------------------------
+### TABLEAU DES MOYENNES AQI
+# --------------------------------------------------------------------------
+avg_df = time_data.copy()
+avg_df["Moyenne AQI"] = avg_df[["Most AQI Reached", "Current AQI"]].mean(axis=1)
+avg_df["Écart-type AQI"] = avg_df[["Most AQI Reached", "Current AQI"]].std(axis=1, ddof=0)
+
+# Réordonner les colonnes pour un affichage plus clair
+avg_df_display = avg_df.rename(columns={
+    "Most AQI Reached": "AQI Max Atteint",
+    "Current AQI": "AQI Actuel"
+})[["AQI Max Atteint", "AQI Actuel", "Moyenne AQI", "Écart-type AQI"]].round(1)
+
+st.markdown("### 📋 Moyenne AQI par État")
+st.dataframe(avg_df_display)
+
+# --------------------------------------------------------------------------
 ### CAMEMBERT
 # --------------------------------------------------------------------------
 if show_pie_chart:
