@@ -36,20 +36,43 @@ selected_states = st.sidebar.multiselect(
     default=all_states if 'selected_states' not in locals() else selected_states
 )
 
-# Slider interactif pour limiter le nombre d'états affichés
 max_states = st.sidebar.slider(
     "Nombre maximum d'états à montrer", 1, len(all_states), len(all_states)
 )
 selected_states = selected_states[:max_states]
 
-# Checkboxes pour afficher/masquer les graphiques
 st.sidebar.header("Affichage des graphiques")
 show_bar_chart = st.sidebar.checkbox("📊 Graphique en barres", value=True)
 show_time_chart = st.sidebar.checkbox("📈 Évolution de la pollution", value=True)
+show_line_chart = st.sidebar.checkbox("📈 Courbe moyenne AQI", value=True)
 show_pie_chart = st.sidebar.checkbox("🥧 Répartition par source", value=True)
 
 filtered_AQI = stateAQI[selected_states]
 
+filtered_time_df = df[df["State"].isin(selected_states)]
+time_data = filtered_time_df.groupby("State").agg({
+    "Most AQI Reached": "mean",
+    "Current AQI": "mean"
+}).loc[selected_states]
+
+avg_df = time_data.copy()
+avg_df = avg_df.assign(
+    Moyenne_AQI=avg_df[["Most AQI Reached", "Current AQI"]].mean(axis=1),
+    Ecart_Type_AQI=avg_df[["Most AQI Reached", "Current AQI"]].std(axis=1, ddof=0),
+    Diff_AQI=avg_df["Most AQI Reached"] - avg_df["Current AQI"]
+)
+
+avg_df["Niveau"] = avg_df["Moyenne_AQI"].apply(
+    lambda x: "Élevé" if x >= 150 else "Modéré" if x >= 100 else "Faible"
+)
+
+avg_df_display = avg_df.rename(columns={
+    "Most AQI Reached": "AQI Max Atteint",
+    "Current AQI": "AQI Actuel",
+    "Moyenne_AQI": "Moyenne AQI",
+    "Ecart_Type_AQI": "Écart-type AQI",
+    "Diff_AQI": "Différence AQI"
+})[["AQI Max Atteint", "AQI Actuel", "Moyenne AQI", "Écart-type AQI", "Différence AQI", "Niveau"]].round(1)
 
 # --------------------------------------------------------------------------
 ### BAR CHART
@@ -63,6 +86,7 @@ if show_bar_chart:
     plt.xticks(rotation=45, ha='right')
     plt.tight_layout()
     figBar.patch.set_alpha(0)
+    figBar.patch.set_facecolor('none')
     axBar.set_facecolor('none')
     axBar.tick_params(colors='white')
     axBar.spines['bottom'].set_color('white')
@@ -78,12 +102,6 @@ if show_bar_chart:
 ### POLLUTION OVER TIME (Most AQI vs Current AQI)
 # --------------------------------------------------------------------------
 if show_time_chart:
-    filtered_time_df = df[df["State"].isin(selected_states)]
-    time_data = filtered_time_df.groupby("State").agg({
-        "Most AQI Reached": "mean",
-        "Current AQI": "mean"
-    }).loc[selected_states]
-
     figTime, axTime = plt.subplots(figsize=(12, 6))
 
     x_pos = range(len(time_data))
@@ -112,18 +130,32 @@ if show_time_chart:
     st.pyplot(figTime)
 
 # --------------------------------------------------------------------------
+### LINE CHART (Moyenne AQI par État)
+# --------------------------------------------------------------------------
+if show_line_chart:
+    figLine, axLine = plt.subplots(figsize=(12, 6))
+    axLine.plot(avg_df.index, avg_df["Moyenne_AQI"], marker='o', linestyle='-', color='#FFD166')
+    axLine.set_xlabel("État", color='white')
+    axLine.set_ylabel("Moyenne AQI", color='white')
+    axLine.set_title("Tendance de la Moyenne AQI par État", color='white')
+    axLine.set_xticks(range(len(avg_df)))
+    axLine.set_xticklabels(avg_df.index, rotation=45, ha='right')
+    axLine.grid(color='white', linestyle='--', linewidth=0.5, alpha=0.3, axis='y')
+    figLine.patch.set_alpha(0)
+    figLine.patch.set_facecolor('none')
+    axLine.set_facecolor('none')
+    axLine.tick_params(colors='white')
+    axLine.spines['bottom'].set_color('white')
+    axLine.spines['left'].set_color('white')
+    axLine.spines['top'].set_color('none')
+    axLine.spines['right'].set_color('none')
+    axLine.set_axisbelow(True)
+
+    st.pyplot(figLine)
+
+# --------------------------------------------------------------------------
 ### TABLEAU DES MOYENNES AQI
 # --------------------------------------------------------------------------
-avg_df = time_data.copy()
-avg_df["Moyenne AQI"] = avg_df[["Most AQI Reached", "Current AQI"]].mean(axis=1)
-avg_df["Écart-type AQI"] = avg_df[["Most AQI Reached", "Current AQI"]].std(axis=1, ddof=0)
-
-# Réordonner les colonnes pour un affichage plus clair
-avg_df_display = avg_df.rename(columns={
-    "Most AQI Reached": "AQI Max Atteint",
-    "Current AQI": "AQI Actuel"
-})[["AQI Max Atteint", "AQI Actuel", "Moyenne AQI", "Écart-type AQI"]].round(1)
-
 st.markdown("### 📋 Moyenne AQI par État")
 st.dataframe(avg_df_display)
 
@@ -141,10 +173,10 @@ if show_pie_chart:
         'Waste Burning': 'Brûlage de déchets'
     }
 
-    df['Source FR'] = df['Major Source of Pollution'].map(traduction)
+    df = df.assign(Source_FR=df['Major Source of Pollution'].map(traduction))
 
     filtered_df = df[df["State"].isin(selected_states)]
-    pollution_counts = filtered_df["Source FR"].value_counts()
+    pollution_counts = filtered_df["Source_FR"].value_counts()
 
     figCam, axCam = plt.subplots(figsize=(8, 8))
     explode = [0.03] * len(pollution_counts)
